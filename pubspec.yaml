@@ -32,6 +32,9 @@ flutter:
     - assets/data/tafseer/
 
   fonts:
+    - family: Gulzar
+      fonts:
+        - asset: assets/fonts/Gulzar-Regular.ttf
     - family: AmiriQuran
       fonts:
         - asset: assets/fonts/AmiriQuran-Regular.ttf

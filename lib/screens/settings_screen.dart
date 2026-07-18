@@ -96,7 +96,7 @@ class SettingsScreen extends StatelessWidget {
                       _SettingRow(
                         theme: theme,
                         label: 'Show Translation',
-                        subtitle: 'Urdu translation — Maulana Maududi',
+                        subtitle: 'Urdu translation — Maulana Maududi (Gulzar font)',
                         trailing: Switch(
                           value: prefs.showTranslation,
                           onChanged: prefs.setShowTranslation,
@@ -107,7 +107,7 @@ class SettingsScreen extends StatelessWidget {
                       _SettingRow(
                         theme: theme,
                         label: 'Show Tafseer',
-                        subtitle: 'Urdu tafseer — Ibn Kathir',
+                        subtitle: 'Urdu tafseer — Ibn Kathir (Noto Nastaliq)',
                         trailing: Switch(
                           value: prefs.showTafseer,
                           onChanged: prefs.setShowTafseer,

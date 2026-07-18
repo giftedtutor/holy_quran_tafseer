@@ -46,8 +46,9 @@ class AppTypography {
 
 class AppTheme {
   static const quranFontFamily = 'PDMSSaleemQuranFont';
-  static const tafseerFontFamily = 'AmiriQuran';
-  static const urduFontFamily = 'NotoNastaliqUrdu';
+  static const translationFontFamily = 'Gulzar';
+  static const tafseerFontFamily = 'NotoNastaliqUrdu';
+  static const urduFontFamily = translationFontFamily;
 
   static TextStyle arabicText({
     required double fontSize,
@@ -69,8 +70,8 @@ class AppTheme {
     required Color color,
   }) {
     return TextStyle(
-      fontFamily: urduFontFamily,
-      fontFamilyFallback: const [urduFontFamily, 'Arial'],
+      fontFamily: tafseerFontFamily,
+      fontFamilyFallback: const [tafseerFontFamily, translationFontFamily, 'Arial'],
       fontSize: fontSize,
       height: lineHeight / fontSize,
       color: color,
@@ -82,10 +83,11 @@ class AppTheme {
     required Color color,
   }) {
     return TextStyle(
-      fontFamily: urduFontFamily,
-      fontFamilyFallback: const [urduFontFamily, 'Arial'],
+      fontFamily: translationFontFamily,
+      fontFamilyFallback: const [translationFontFamily, tafseerFontFamily, 'Arial'],
       fontSize: fontSize,
-      height: 1.85,
+      height: 2.05,
+      letterSpacing: 0.15,
       color: color,
     );
   }
