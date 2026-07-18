@@ -1,0 +1,43 @@
+name: holy_quran_tafseer
+description: "An elegant offline Quran reader with Urdu tafseer and translation."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.8
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.2.1
+  quran_with_tafsir: ^1.0.1
+  shared_preferences: ^2.5.3
+  flutter_localizations:
+    sdk: flutter
+  url_launcher: ^6.3.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/data/quran_ur.json
+    - assets/data/tafseer/
+
+  fonts:
+    - family: AmiriQuran
+      fonts:
+        - asset: assets/fonts/AmiriQuran-Regular.ttf
+    - family: PDMSSaleemQuranFont
+      fonts:
+        - asset: assets/fonts/PDMSSaleemQuranFont.ttf
+    - family: NotoNastaliqUrdu
+      fonts:
+        - asset: assets/fonts/NotoNastaliqUrdu.ttf
