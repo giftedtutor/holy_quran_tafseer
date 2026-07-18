@@ -61,9 +61,11 @@ class AyahCard extends StatelessWidget {
                       alignment: Alignment.center,
                       child: Text(
                         toArabicNumerals(ayah.id),
-                        style: AppTheme.arabicText(
-                          fontSize: 14,
-                          lineHeight: 20,
+                        textDirection: TextDirection.rtl,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          height: 1,
                           color: AppColors.accent,
                         ),
                       ),
@@ -124,21 +126,6 @@ class AyahCard extends StatelessWidget {
                 ),
                 if (prefs.showTranslation) ...[
                   Divider(color: theme.divider, height: 24),
-                  Row(
-                    children: [
-                      Icon(Icons.translate, size: 14, color: AppColors.primary),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Translation',
-                        textDirection: TextDirection.rtl,
-                        style: AppTheme.translationText(
-                          fontSize: 12,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
                   Text(
                     translationText,
                     textAlign: TextAlign.right,

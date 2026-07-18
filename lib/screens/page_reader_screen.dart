@@ -8,9 +8,10 @@ import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../utils/arabic_utils.dart';
 import '../utils/quran_navigation.dart';
+import '../utils/reader_viewport_builder.dart';
 import '../utils/rtl_navigation.dart';
-import '../widgets/page_ayah_block.dart';
 import '../widgets/screen_header.dart';
+import '../widgets/viewport_paged_content.dart';
 import 'page_jump_screen.dart';
 
 class PageReaderScreen extends StatefulWidget {
@@ -30,21 +31,16 @@ class PageReaderScreen extends StatefulWidget {
 class _PageReaderScreenState extends State<PageReaderScreen> {
   final _quran = QuranService.instance;
   final _urdu = UrduQuranService.instance;
-  late final PageController _controller;
-  late int _currentPage;
+
+  late int _quranPage;
+  int _slideIndex = 0;
+  int _slideCount = 1;
   final _tafsirCache = <int, Map<int, String>>{};
 
   @override
   void initState() {
     super.initState();
-    _currentPage = widget.initialPage ?? widget.prefs.lastPage;
-    _controller = PageController(initialPage: _currentPage - 1);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+    _quranPage = widget.initialPage ?? widget.prefs.lastPage;
   }
 
   Future<Map<int, String>> _tafsirForSurah(int surahId) async {
@@ -55,17 +51,17 @@ class _PageReaderScreenState extends State<PageReaderScreen> {
   }
 
   int get _currentSurahId {
-    final ayahs = _quran.getPage(_currentPage);
+    final ayahs = _quran.getPage(_quranPage);
     if (ayahs.isEmpty) return 1;
     return ayahs.first.surahNumber;
   }
 
   Future<void> _togglePageBookmark() async {
-    final ayahs = _quran.getPage(_currentPage);
+    final ayahs = _quran.getPage(_quranPage);
     final subtitle = ayahs.isEmpty
-        ? 'Page $_currentPage'
+        ? 'Page $_quranPage'
         : _quran.getSurahMetadata(ayahs.first.surahNumber).nameEn;
-    await widget.prefs.togglePageBookmark(_currentPage, subtitle);
+    await widget.prefs.togglePageBookmark(_quranPage, subtitle);
   }
 
   Future<void> _toggleSurahBookmark() async {
@@ -77,8 +73,39 @@ class _PageReaderScreenState extends State<PageReaderScreen> {
     );
   }
 
+  void _saveProgress() {
+    widget.prefs.saveLastRead(page: _quranPage);
+    final ayahs = _quran.getPage(_quranPage);
+    if (ayahs.isNotEmpty) {
+      widget.prefs.saveLastRead(
+        surah: ayahs.first.surahNumber,
+        ayah: ayahs.first.id,
+        page: _quranPage,
+      );
+    }
+  }
+
+  void _goToQuranPage(int page) {
+    if (page < 1 || page > totalPages) return;
+    setState(() {
+      _quranPage = page;
+      _slideIndex = 0;
+    });
+    _saveProgress();
+  }
+
+  void _goToNextQuranPage() {
+    if (_quranPage >= totalPages) return;
+    _goToQuranPage(_quranPage + 1);
+  }
+
+  void _goToPreviousQuranPage() {
+    if (_quranPage <= 1) return;
+    _goToQuranPage(_quranPage - 1);
+  }
+
   void _showBookmarkMenu() {
-    final pageBookmarked = widget.prefs.isPageBookmarked(_currentPage);
+    final pageBookmarked = widget.prefs.isPageBookmarked(_quranPage);
     final surahBookmarked = widget.prefs.isSurahBookmarked(_currentSurahId);
     final meta = _quran.getSurahMetadata(_currentSurahId);
 
@@ -97,10 +124,7 @@ class _PageReaderScreenState extends State<PageReaderScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  'Bookmarks',
-                  style: AppTypography.h3(theme.text),
-                ),
+                Text('Bookmarks', style: AppTypography.h3(theme.text)),
                 const SizedBox(height: 12),
                 ListTile(
                   leading: Icon(
@@ -110,7 +134,7 @@ class _PageReaderScreenState extends State<PageReaderScreen> {
                   title: Text(
                     pageBookmarked ? 'Remove page bookmark' : 'Bookmark this page',
                   ),
-                  subtitle: Text('Page $_currentPage'),
+                  subtitle: Text('Page $_quranPage'),
                   onTap: () async {
                     Navigator.pop(context);
                     await _togglePageBookmark();
@@ -141,101 +165,50 @@ class _PageReaderScreenState extends State<PageReaderScreen> {
     );
   }
 
-  Widget _buildPage(int pageNumber) {
-    final theme = AppThemeData.fromDarkMode(widget.prefs.isDarkMode);
-    final paper = pageBackground(widget.prefs.pageBrightness, theme.isDark);
-    final ink = theme.isDark ? AppColors.darkText : AppColors.text;
-    final arabicAyahs = _quran.getPage(pageNumber);
-
-    if (arabicAyahs.isEmpty) {
-      return ColoredBox(
-        color: paper,
-        child: Center(
-          child: Text(
-            'Page $pageNumber',
-            textDirection: TextDirection.rtl,
-            style: AppTheme.translationText(fontSize: 14, color: ink),
-          ),
-        ),
-      );
+  Widget _buildPageHeader({
+    required int pageNumber,
+    required List<Ayah> ayahs,
+    required Color ink,
+  }) {
+    if (ayahs.isEmpty) {
+      return Text('Page $pageNumber', style: AppTypography.bodySmall(ink));
     }
 
-    final juz = arabicAyahs.first.juz;
-    final firstSurah = _quran.getSurahMetadata(arabicAyahs.first.surahNumber);
-    final lastSurah = _quran.getSurahMetadata(arabicAyahs.last.surahNumber);
+    final juz = ayahs.first.juz;
+    final firstSurah = _quran.getSurahMetadata(ayahs.first.surahNumber);
+    final lastSurah = _quran.getSurahMetadata(ayahs.last.surahNumber);
     final headerLabel = firstSurah.number == lastSurah.number
-        ? '${firstSurah.nameAr} ${toArabicNumerals(arabicAyahs.first.id)}-${toArabicNumerals(arabicAyahs.last.id)}'
+        ? '${firstSurah.nameAr} ${toArabicNumerals(ayahs.first.id)}-${toArabicNumerals(ayahs.last.id)}'
         : '${firstSurah.nameAr} - ${lastSurah.nameAr}';
 
-    final surahIds = arabicAyahs.map((a) => a.surahNumber).toSet();
-
-    return ColoredBox(
-      color: paper,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    headerLabel,
-                    textDirection: TextDirection.rtl,
-                    style: AppTheme.translationText(fontSize: 12, color: ink),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Text(
-                  toArabicNumerals(pageNumber),
-                  style: AppTheme.arabicText(
-                    fontSize: 14,
-                    lineHeight: 20,
-                    color: ink,
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    'Juz $juz',
-                    textAlign: TextAlign.right,
-                    textDirection: TextDirection.rtl,
-                    style: AppTheme.translationText(fontSize: 12, color: ink),
-                  ),
-                ),
-              ],
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                headerLabel,
+                textDirection: TextDirection.rtl,
+                style: AppTypography.caption(ink),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
-          Divider(color: ink.withValues(alpha: 0.15), height: 1),
-          Expanded(
-            child: FutureBuilder<List<Map<int, String>>>(
-              future: Future.wait(surahIds.map(_tafsirForSurah)),
-              builder: (context, snapshot) {
-                final tafseerMaps = <int, Map<int, String>>{};
-                if (snapshot.hasData) {
-                  var i = 0;
-                  for (final id in surahIds) {
-                    tafseerMaps[id] = snapshot.data![i++];
-                  }
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-                  itemCount: arabicAyahs.length,
-                  itemBuilder: (context, index) {
-                    final arabic = arabicAyahs[index];
-                    return PageAyahBlock(
-                      arabicAyah: arabic,
-                      urduTranslation: _urdu.getTranslation(arabic.surahNumber, arabic.id) ?? '',
-                      tafseerText: tafseerMaps[arabic.surahNumber]?[arabic.id],
-                      prefs: widget.prefs,
-                    );
-                  },
-                );
-              },
+            Text(
+              '$pageNumber',
+              style: AppTypography.h3(ink).copyWith(fontSize: 14),
             ),
-          ),
-        ],
-      ),
+            Expanded(
+              child: Text(
+                'Juz $juz',
+                textAlign: TextAlign.right,
+                style: AppTypography.caption(ink),
+              ),
+            ),
+          ],
+        ),
+        Divider(color: ink.withValues(alpha: 0.15), height: 12),
+      ],
     );
   }
 
@@ -246,9 +219,13 @@ class _PageReaderScreenState extends State<PageReaderScreen> {
     return ListenableBuilder(
       listenable: widget.prefs,
       builder: (context, _) {
-        final pageBookmarked = widget.prefs.isPageBookmarked(_currentPage);
+        final pageBookmarked = widget.prefs.isPageBookmarked(_quranPage);
         final surahBookmarked = widget.prefs.isSurahBookmarked(_currentSurahId);
         final anyBookmarked = pageBookmarked || surahBookmarked;
+        final paper = pageBackground(widget.prefs.pageBrightness, theme.isDark);
+        final ink = theme.isDark ? AppColors.darkText : AppColors.text;
+        final arabicAyahs = _quran.getPage(_quranPage);
+        final surahIds = arabicAyahs.map((a) => a.surahNumber).toSet();
 
         return AnnotatedRegion<SystemUiOverlayStyle>(
           value: SystemUiOverlayStyle.light,
@@ -258,7 +235,9 @@ class _PageReaderScreenState extends State<PageReaderScreen> {
               children: [
                 ReaderToolbar(
                   title: 'Page Reader',
-                  counter: '($_currentPage/$totalPages)',
+                  counter: _slideCount > 1
+                      ? 'Page $_quranPage · ${_slideIndex + 1}/$_slideCount'
+                      : 'Page $_quranPage / $totalPages',
                   actions: [
                     IconButton(
                       onPressed: _showBookmarkMenu,
@@ -269,14 +248,12 @@ class _PageReaderScreenState extends State<PageReaderScreen> {
                     ),
                     IconButton(
                       onPressed: () async {
-                        final page = await pushRtl<int>(
+                        final page = await pushPage<int>(
                           context,
                           PageJumpScreen(prefs: widget.prefs),
                         );
                         if (page != null && mounted) {
-                          _controller.jumpToPage(page - 1);
-                          setState(() => _currentPage = page);
-                          widget.prefs.saveLastRead(page: page);
+                          _goToQuranPage(page);
                         }
                       },
                       icon: const Icon(Icons.pin_outlined, color: AppColors.accentLight),
@@ -285,26 +262,62 @@ class _PageReaderScreenState extends State<PageReaderScreen> {
                   ],
                 ),
                 Expanded(
-                  child: Directionality(
-                    textDirection: TextDirection.rtl,
-                    child: PageView.builder(
-                      controller: _controller,
-                      itemCount: totalPages,
-                      onPageChanged: (index) {
-                        final page = index + 1;
-                        setState(() => _currentPage = page);
-                        widget.prefs.saveLastRead(page: page);
-                        final ayahs = _quran.getPage(page);
-                        if (ayahs.isNotEmpty) {
-                          widget.prefs.saveLastRead(
-                            surah: ayahs.first.surahNumber,
-                            ayah: ayahs.first.id,
-                            page: page,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final contentWidth = constraints.maxWidth - 40;
+                      final contentHeight = constraints.maxHeight - 24;
+
+                      return FutureBuilder<List<Map<int, String>>>(
+                        future: Future.wait(surahIds.map(_tafsirForSurah)),
+                        builder: (context, snapshot) {
+                          final tafseerMaps = <int, Map<int, String>>{};
+                          if (snapshot.hasData) {
+                            var i = 0;
+                            for (final id in surahIds) {
+                              tafseerMaps[id] = snapshot.data![i++];
+                            }
+                          }
+
+                          final header = _buildPageHeader(
+                            pageNumber: _quranPage,
+                            ayahs: arabicAyahs,
+                            ink: ink,
                           );
-                        }
-                      },
-                      itemBuilder: (context, index) => _buildPage(index + 1),
-                    ),
+
+                          final pages = buildAyahViewportPages(
+                            ayahs: arabicAyahs,
+                            prefs: widget.prefs,
+                            maxWidth: contentWidth,
+                            maxHeight: contentHeight,
+                            leadingHeader: header,
+                            leadingHeaderHeight: arabicAyahs.isEmpty ? 24 : 52,
+                            translationFor: (surahId, ayahId) =>
+                                _urdu.getTranslation(surahId, ayahId) ?? '',
+                            tafseerFor: (surahId, ayahId) =>
+                                tafseerMaps[surahId]?[ayahId],
+                          );
+
+                          if (_slideCount != pages.length) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (mounted) setState(() => _slideCount = pages.length);
+                            });
+                          }
+
+                          return ViewportPagedContent(
+                            key: ValueKey('page-$_quranPage-${widget.prefs.arabicFontSize}-${widget.prefs.showTranslation}-${widget.prefs.showTafseer}'),
+                            controller: null,
+                            backgroundColor: paper,
+                            pages: pages.isEmpty ? [[]] : pages,
+                            onSlideChanged: (index) {
+                              setState(() => _slideIndex = index);
+                              _saveProgress();
+                            },
+                            onRequestNext: _goToNextQuranPage,
+                            onRequestPrevious: _goToPreviousQuranPage,
+                          );
+                        },
+                      );
+                    },
                   ),
                 ),
               ],

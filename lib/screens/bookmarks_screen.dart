@@ -25,7 +25,7 @@ class BookmarksScreen extends StatelessWidget {
     switch (bookmark.type) {
       case BookmarkType.page:
         if (bookmark.page != null) {
-          pushRtl(
+          pushPage(
             context,
             PageReaderScreen(
               prefs: prefs,
@@ -35,7 +35,7 @@ class BookmarksScreen extends StatelessWidget {
         }
       case BookmarkType.juz:
         final page = bookmark.juz != null ? juzStartPage(bookmark.juz!) : 1;
-        pushRtl(
+        pushPage(
           context,
           PageReaderScreen(
             prefs: prefs,
@@ -44,7 +44,7 @@ class BookmarksScreen extends StatelessWidget {
         );
       case BookmarkType.surah:
         if (bookmark.surahId != null) {
-          pushRtl(
+          pushPage(
             context,
             SurahReaderScreen(
               prefs: prefs,
@@ -54,7 +54,7 @@ class BookmarksScreen extends StatelessWidget {
         }
       case BookmarkType.verse:
         if (bookmark.surahId != null) {
-          pushRtl(
+          pushPage(
             context,
             SurahReaderScreen(
               prefs: prefs,
@@ -165,7 +165,7 @@ class BookmarksScreen extends StatelessWidget {
                                               ],
                                             ),
                                           ),
-                                          Icon(Icons.chevron_left, color: theme.textMuted),
+                                          Icon(Icons.chevron_right, color: theme.textMuted),
                                         ],
                                       ),
                                     ),

@@ -73,7 +73,7 @@ class _SurahsScreenState extends State<SurahsScreen> {
                     nameArabic: surah.nameAr,
                     versesCount: surah.ayahCount,
                     revelation: surah.revelationType ?? '',
-                    onTap: () => pushRtl(
+                    onTap: () => pushPage(
                       context,
                       SurahReaderScreen(
                         prefs: widget.prefs,

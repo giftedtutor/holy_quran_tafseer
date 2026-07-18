@@ -29,12 +29,7 @@ class HolyQuranTafseerApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          builder: (context, child) {
-            return Directionality(
-              textDirection: TextDirection.rtl,
-              child: child ?? const SizedBox.shrink(),
-            );
-          },
+          builder: (context, child) => child ?? const SizedBox.shrink(),
           home: SplashScreen(prefs: _prefs),
         );
       },

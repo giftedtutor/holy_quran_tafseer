@@ -72,7 +72,7 @@ class HomeHeader extends StatelessWidget {
   }
 }
 
-/// List screen header with optional back button (RTL: back on the right).
+/// List screen header with optional back button on the left (English LTR layout).
 class ScreenHeader extends StatelessWidget {
   const ScreenHeader({
     super.key,
@@ -96,14 +96,20 @@ class ScreenHeader extends StatelessWidget {
     );
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 20, 8),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ?trailing,
+          if (showBack)
+            IconButton(
+              onPressed: onBack ?? () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
+              color: AppColors.primary,
+              tooltip: 'Back',
+            ),
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
@@ -119,20 +125,14 @@ class ScreenHeader extends StatelessWidget {
               ],
             ),
           ),
-          if (showBack)
-            IconButton(
-              onPressed: onBack ?? () => Navigator.of(context).pop(),
-              icon: const Icon(Icons.arrow_forward_ios_rounded, size: 20),
-              color: AppColors.primary,
-              tooltip: 'Back',
-            ),
+          ?trailing,
         ],
       ),
     );
   }
 }
 
-/// Dark toolbar for reader screens with back, title, and actions.
+/// Dark toolbar for reader screens with back on the left.
 class ReaderToolbar extends StatelessWidget {
   const ReaderToolbar({
     super.key,
@@ -159,7 +159,7 @@ class ReaderToolbar extends StatelessWidget {
             children: [
               IconButton(
                 onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.arrow_forward_ios_rounded, color: AppColors.accentLight, size: 22),
+                icon: const Icon(Icons.arrow_back_ios_rounded, color: AppColors.accentLight, size: 22),
                 tooltip: 'Back',
               ),
               Expanded(
@@ -168,19 +168,15 @@ class ReaderToolbar extends StatelessWidget {
                     Text(
                       title,
                       textAlign: TextAlign.center,
-                      style: AppTheme.translationText(
-                        fontSize: 16,
-                        color: AppColors.textOnPrimary,
-                      ),
+                      style: AppTypography.h3(AppColors.textOnPrimary).copyWith(fontSize: 16),
                     ),
                     if (subtitle != null)
                       Text(
                         subtitle!,
                         textAlign: TextAlign.center,
                         textDirection: TextDirection.rtl,
-                        style: AppTheme.translationText(
-                          fontSize: 13,
-                          color: AppColors.textOnPrimary.withValues(alpha: 0.8),
+                        style: AppTypography.bodySmall(
+                          AppColors.textOnPrimary.withValues(alpha: 0.85),
                         ),
                       ),
                   ],
@@ -188,13 +184,11 @@ class ReaderToolbar extends StatelessWidget {
               ),
               if (counter != null)
                 Padding(
-                  padding: const EdgeInsets.only(left: 4),
+                  padding: const EdgeInsets.only(right: 4),
                   child: Text(
                     counter!,
-                    textDirection: TextDirection.rtl,
-                    style: AppTheme.translationText(
-                      fontSize: 13,
-                      color: AppColors.textOnPrimary,
+                    style: AppTypography.bodySmall(AppColors.textOnPrimary).copyWith(
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),

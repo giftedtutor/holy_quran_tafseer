@@ -48,9 +48,11 @@ class PageAyahBlock extends StatelessWidget {
                     alignment: Alignment.center,
                     child: Text(
                       toArabicNumerals(arabicAyah.id),
-                      style: AppTheme.arabicText(
+                      textDirection: TextDirection.rtl,
+                      style: TextStyle(
                         fontSize: 11,
-                        lineHeight: 16,
+                        fontWeight: FontWeight.w700,
+                        height: 1,
                         color: AppColors.primary,
                       ),
                     ),

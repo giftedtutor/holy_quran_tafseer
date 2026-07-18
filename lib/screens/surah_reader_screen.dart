@@ -5,8 +5,9 @@ import '../services/preferences_service.dart';
 import '../services/urdu_quran_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
-import '../widgets/ayah_card.dart';
+import '../utils/reader_viewport_builder.dart';
 import '../widgets/screen_header.dart';
+import '../widgets/viewport_paged_content.dart';
 
 class SurahReaderScreen extends StatefulWidget {
   const SurahReaderScreen({
@@ -27,24 +28,23 @@ class SurahReaderScreen extends StatefulWidget {
 class _SurahReaderScreenState extends State<SurahReaderScreen> {
   final _quran = QuranService.instance;
   final _urdu = UrduQuranService.instance;
-  late final PageController _pageController;
   late final Surah _arabicSurah;
 
   Map<int, String> _urduTranslations = {};
   Map<int, String> _urduTafseer = {};
   bool _loadingUrdu = true;
-  int _currentIndex = 0;
+  late int _ayahIndex;
+  int _slideIndex = 0;
+  int _slideCount = 1;
 
   @override
   void initState() {
     super.initState();
     _arabicSurah = _quran.getSurah(widget.surahId);
-    final initialIndex = ((widget.initialAyahId ?? 1) - 1).clamp(
+    _ayahIndex = ((widget.initialAyahId ?? 1) - 1).clamp(
       0,
       _arabicSurah.verses.length - 1,
     );
-    _currentIndex = initialIndex;
-    _pageController = PageController(initialPage: initialIndex);
     _loadUrduContent();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -70,18 +70,30 @@ class _SurahReaderScreenState extends State<SurahReaderScreen> {
     });
   }
 
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  void _onPageChanged(int index) {
-    setState(() => _currentIndex = index);
+  void _saveAyahProgress() {
     widget.prefs.saveLastRead(
       surah: widget.surahId,
-      ayah: _arabicSurah.verses[index].id,
+      ayah: _arabicSurah.verses[_ayahIndex].id,
     );
+  }
+
+  void _goToAyah(int index) {
+    if (index < 0 || index >= _arabicSurah.verses.length) return;
+    setState(() {
+      _ayahIndex = index;
+      _slideIndex = 0;
+    });
+    _saveAyahProgress();
+  }
+
+  void _goToNextAyah() {
+    if (_ayahIndex >= _arabicSurah.verses.length - 1) return;
+    _goToAyah(_ayahIndex + 1);
+  }
+
+  void _goToPreviousAyah() {
+    if (_ayahIndex <= 0) return;
+    _goToAyah(_ayahIndex - 1);
   }
 
   @override
@@ -89,6 +101,7 @@ class _SurahReaderScreenState extends State<SurahReaderScreen> {
     final theme = AppThemeData.fromDarkMode(widget.prefs.isDarkMode);
     final meta = _quran.getSurahMetadata(widget.surahId);
     final totalAyahs = _arabicSurah.verses.length;
+    final currentAyah = _arabicSurah.verses[_ayahIndex];
 
     return ListenableBuilder(
       listenable: widget.prefs,
@@ -100,7 +113,9 @@ class _SurahReaderScreenState extends State<SurahReaderScreen> {
               ReaderToolbar(
                 title: meta.nameEn,
                 subtitle: meta.nameAr,
-                counter: 'Ayah ${_currentIndex + 1} / $totalAyahs',
+                counter: _slideCount > 1
+                    ? 'Ayah ${_ayahIndex + 1} · ${_slideIndex + 1}/$_slideCount'
+                    : 'Ayah ${_ayahIndex + 1} / $totalAyahs',
                 actions: [
                   IconButton(
                     onPressed: () {
@@ -155,43 +170,48 @@ class _SurahReaderScreenState extends State<SurahReaderScreen> {
                           ),
                         ),
                       )
-                    : PageView.builder(
-                        controller: _pageController,
-                        itemCount: totalAyahs,
-                        onPageChanged: _onPageChanged,
-                        itemBuilder: (context, index) {
-                          final arabicAyah = _arabicSurah.verses[index];
-                          return SingleChildScrollView(
-                            padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-                            child: Column(
-                              children: [
-                                if (index == 0)
-                                  _SurahHeader(
-                                    theme: theme,
-                                    meta: meta,
-                                    englishName: meta.nameEn,
-                                    prefs: widget.prefs,
-                                  ),
-                                if (index == 0) const SizedBox(height: 16),
-                                AyahCard(
-                                  ayah: arabicAyah,
-                                  arabicText: arabicAyah.text,
-                                  translationText: _urduTranslations[arabicAyah.id] ?? '',
-                                  tafseerText: _urduTafseer[arabicAyah.id],
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          final contentWidth = constraints.maxWidth - 40;
+                          final contentHeight = constraints.maxHeight - 24;
+                          final leadingHeader = _ayahIndex == 0
+                              ? _SurahHeader(
+                                  theme: theme,
+                                  meta: meta,
+                                  englishName: meta.nameEn,
                                   prefs: widget.prefs,
-                                  highlight: widget.initialAyahId == arabicAyah.id,
-                                  onBookmarkTap: () {
-                                    widget.prefs.toggleVerseBookmark(
-                                      surahId: widget.surahId,
-                                      ayahId: arabicAyah.id,
-                                      surahName: meta.nameAr,
-                                      surahEnglishName: meta.nameEn,
-                                      preview: _urduTranslations[arabicAyah.id] ?? arabicAyah.text,
-                                    );
-                                  },
-                                ),
-                              ],
+                                )
+                              : null;
+                          final leadingHeaderHeight = _ayahIndex == 0 ? 180.0 : 0.0;
+
+                          final pages = buildSurahAyahViewportPages(
+                            ayah: currentAyah,
+                            prefs: widget.prefs,
+                            arabicText: currentAyah.text,
+                            translationText: _urduTranslations[currentAyah.id] ?? '',
+                            tafseerText: _urduTafseer[currentAyah.id],
+                            maxWidth: contentWidth,
+                            maxHeight: contentHeight - leadingHeaderHeight,
+                            leadingHeader: leadingHeader,
+                            leadingHeaderHeight: leadingHeaderHeight,
+                          );
+
+                          if (_slideCount != pages.length) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (mounted) setState(() => _slideCount = pages.length);
+                            });
+                          }
+
+                          return ViewportPagedContent(
+                            key: ValueKey(
+                              'ayah-$_ayahIndex-${widget.prefs.arabicFontSize}-${widget.prefs.showTranslation}-${widget.prefs.showTafseer}',
                             ),
+                            backgroundColor: theme.background,
+                            pages: pages.isEmpty ? [[]] : pages,
+                            padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                            onSlideChanged: (index) => setState(() => _slideIndex = index),
+                            onRequestNext: _goToNextAyah,
+                            onRequestPrevious: _goToPreviousAyah,
                           );
                         },
                       ),

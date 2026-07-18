@@ -173,7 +173,7 @@ class _SearchScreenState extends State<SearchScreen> {
             lineHeight: 28,
             color: theme.textArabic,
           ),
-          onTap: () => pushRtl(
+          onTap: () => pushPage(
             context,
             SurahReaderScreen(
               prefs: widget.prefs,
@@ -199,7 +199,7 @@ class _SearchScreenState extends State<SearchScreen> {
           title: meta.nameAr,
           body: truncateArabic(match.translation, maxLength: 120),
           bodyStyle: AppTheme.translationText(fontSize: 15, color: theme.text),
-          onTap: () => pushRtl(
+          onTap: () => pushPage(
             context,
             SurahReaderScreen(
               prefs: widget.prefs,

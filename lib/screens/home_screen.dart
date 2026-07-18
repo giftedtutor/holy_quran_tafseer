@@ -29,7 +29,7 @@ class HomeScreenState extends State<HomeScreen> {
   final _quran = QuranService.instance;
 
   void _openSurah(int surahId, {int? ayahId}) {
-    pushRtl(
+    pushPage(
       context,
       SurahReaderScreen(
         prefs: widget.prefs,
@@ -40,7 +40,7 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   void _openPageReader({int? page}) {
-    pushRtl(
+    pushPage(
       context,
       PageReaderScreen(
         prefs: widget.prefs,
@@ -119,7 +119,7 @@ class HomeScreenState extends State<HomeScreen> {
                       title: 'Search',
                       subtitle: 'Arabic & Urdu',
                       theme: theme,
-                      onTap: () => pushRtl(
+                      onTap: () => pushPage(
                         context,
                         SearchScreen(prefs: widget.prefs),
                       ),
@@ -130,7 +130,7 @@ class HomeScreenState extends State<HomeScreen> {
                       subtitle: 'Jump to page',
                       theme: theme,
                       onTap: () async {
-                        final page = await pushRtl<int>(
+                        final page = await pushPage<int>(
                           context,
                           PageJumpScreen(prefs: widget.prefs),
                         );
@@ -213,7 +213,7 @@ class _ContinueCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const Icon(Icons.chevron_left, color: AppColors.primary, size: 28),
+                    const Icon(Icons.chevron_right, color: AppColors.primary, size: 28),
                   ],
                 ),
               ),
@@ -260,7 +260,7 @@ class _ContinueCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const Icon(Icons.chevron_left, color: AppColors.primary, size: 28),
+                    const Icon(Icons.chevron_right, color: AppColors.primary, size: 28),
                   ],
                 ),
               ),

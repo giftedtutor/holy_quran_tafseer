@@ -44,7 +44,7 @@ class JuzScreen extends StatelessWidget {
                           color: theme.surface,
                           borderRadius: BorderRadius.circular(16),
                           child: InkWell(
-                            onTap: () => pushRtl(
+                            onTap: () => pushPage(
                               context,
                               PageReaderScreen(
                                 prefs: prefs,
